@@ -33,12 +33,21 @@ worker.get('/getAllIDs/:schoolID/:username/:password', async (request, context) 
     $(".DataRow, .DataRowAlt").each(function () {
         let classData = [];
         $(this).find("th, td").each(function () {
-            classData.push($(this).text());
+            let content = $(this).html();
+            let self = $(this);
+            if (content.includes('class="Grade"') && content.includes('<a')){
+                classData.push([$(this).find("a").attr("href"),$(this).text()]);
+            } else {
+                classData.push([$(this).text()]);
+            }
+            
         });
         grades.push(classData);
     });
 
-    return new Response(JSON.stringify(grades));
+    let headers = new Headers();
+    headers.append("Access-Control-Allow-Origin", "*");
+    return new Response(JSON.stringify(grades), {headers});
 });
 
 
@@ -53,6 +62,10 @@ worker.get('/getClassBreakdown/:schoolID/:username/:password/:classID', async (r
         "method": "POST",
         "redirect": "manual"
     });
+
+    if (res.status == 200){
+        return new Response(["Error, Username/Password/SchoolID incorrect"]);
+    }
     const res2 = await fetch(`https://dodea.gradespeed.net/pc/ParentStudentGrades.aspx?data=${context.pathParams.classID}`, {
         "headers": {
             "cookie": res.headers.get('set-cookie'),
@@ -80,8 +93,9 @@ worker.get('/getClassBreakdown/:schoolID/:username/:password/:classID', async (r
             });
         });
     });
-
-    return new Response(JSON.stringify(grades));
+    let headers = new Headers();
+    headers.append("Access-Control-Allow-Origin", "*");
+    return new Response(JSON.stringify(grades), {headers});
 });
 
 /**
